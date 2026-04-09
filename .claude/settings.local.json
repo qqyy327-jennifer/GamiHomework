@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(/c/Program Files/nodejs/npm.cmd install)",
+      "Bash(PATH=\"/c/Program Files/nodejs:$PATH\" /c/Program Files/nodejs/npm.cmd install)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

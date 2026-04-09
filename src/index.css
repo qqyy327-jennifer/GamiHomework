@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply font-round select-none bg-mario-sky; }
+}
+
+@layer components {
+  /* 馬力歐磚塊風格按鈕：底部深色陰影模擬 3D 深度 */
+  .btn-mario {
+    @apply rounded-xl font-bold text-white
+           transition-all duration-75 cursor-pointer
+           flex items-center justify-center gap-2
+           border-b-4 active:border-b-0 active:translate-y-1;
+  }
+  .btn-red    { @apply btn-mario bg-mario-red    border-mario-redDark; }
+  .btn-blue   { @apply btn-mario bg-mario-blue   border-mario-blueDark; }
+  .btn-green  { @apply btn-mario bg-mario-green  border-mario-greenDk; }
+  .btn-yellow { @apply btn-mario bg-mario-yellow border-mario-yellowDk text-mario-brown; }
+
+  /* 問號磚塊風格數字鍵 */
+  .key-block {
+    @apply btn-mario bg-mario-ground border-mario-yellowDk
+           text-mario-brown font-black text-xl
+           rounded-xl shadow-md;
+  }
+
+  .card {
+    @apply bg-white rounded-3xl shadow-md p-4;
+  }
+  .task-done {
+    @apply opacity-60 line-through;
+  }
+}
