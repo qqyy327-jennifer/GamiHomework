@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -32,10 +32,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # 在 GitHub repo Settings → Secrets 新增此變數
           VITE_GAS_URL: ${{ secrets.VITE_GAS_URL }}
 
-      - uses: actions/configure-pages@v4
+      - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
