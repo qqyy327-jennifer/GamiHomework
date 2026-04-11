@@ -147,11 +147,11 @@ function completeTask(body) {
   const row   = body.rowId
   sheet.getRange(row, 5).setValue('done')
   if (body.fileUrl) sheet.getRange(row, 6).setValue(body.fileUrl)
-  const stars = Number(getConfigMap()['star_per_task'] || 1)
+  const stars  = Number(getConfigMap()['star_per_task'] || 1)
   sheet.getRange(row, 8).setValue(stars)
-  addStars(body.child_id, stars, `完成任務 (第${row}列)`)
+  const ledger = addStars(body.child_id, stars, `完成任務 (第${row}列)`)
   checkAndUpdateStreak(body.child_id)
-  return { ok: true, starsAwarded: stars }
+  return { ok: true, starsAwarded: stars, balance: ledger.balance }
 }
 
 function approveTask(rowId, extraStars, childId) {

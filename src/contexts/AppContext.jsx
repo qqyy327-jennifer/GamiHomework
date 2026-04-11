@@ -117,10 +117,15 @@ export function AppProvider({ children }) {
   const completeTask = useCallback(async (rowId, fileUrl) => {
     const res = await apiPost({ action: 'completeTask', rowId, fileUrl, child_id: childId })
     if (res.ok) {
-      setStars(s => s + (res.starsAwarded || 0))
+      // 優先用後端回傳的絕對餘額，避免前端累加誤差
+      if (res.balance != null) {
+        setStars(res.balance)
+      } else {
+        setStars(s => s + (res.starsAwarded || 0))
+      }
       setTasks(prev => prev.map(t => t.rowId === rowId ? { ...t, status: 'done' } : t))
       triggerStarBurst()
-      showToast(`獲得 ${res.starsAwarded} 顆星星！⭐`, 'success')
+      showToast(`獲得 ${res.starsAwarded || 1} 顆星星！⭐`, 'success')
     }
     return res
   }, [apiPost, childId])

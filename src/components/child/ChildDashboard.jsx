@@ -1,16 +1,14 @@
 import { useState } from 'react'
 import { useApp } from '../../contexts/AppContext'
-import StreakBar     from '../shared/StreakBar'
-import TaskCard      from './TaskCard'
-import HomeworkUpload from './HomeworkUpload'
-import SideQuests    from './SideQuests'
-import StarExchange  from './StarExchange'
+import StreakBar    from '../shared/StreakBar'
+import TaskCard     from './TaskCard'
+import SideQuests   from './SideQuests'
+import StarExchange from './StarExchange'
 
 const TABS = [
-  { id: 'home',    label: '今日任務', icon: '📋' },
-  { id: 'hw',      label: '上傳作業', icon: '📸' },
-  { id: 'quests',  label: '額外任務', icon: '🎯' },
-  { id: 'shop',    label: '星星商店', icon: '🛒' },
+  { id: 'home',   label: '今日任務', icon: '📋' },
+  { id: 'quests', label: '額外任務', icon: '🎯' },
+  { id: 'shop',   label: '星星商店', icon: '🛒' },
 ]
 
 export default function ChildDashboard() {
@@ -106,7 +104,6 @@ export default function ChildDashboard() {
           </>
         )}
 
-        {tab === 'hw'     && <HomeworkUpload />}
         {tab === 'quests' && <SideQuests />}
         {tab === 'shop'   && <StarExchange />}
       </main>
