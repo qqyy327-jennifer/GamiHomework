@@ -71,7 +71,8 @@ function doPost(e) {
       case 'uploadFile':    result = uploadFileToDrive(body);                             break
       case 'completeTask':  result = completeTask(body);                                  break
       case 'approveTask':   result = approveTask(body.taskRowId, body.stars, body.child_id); break
-      case 'addStars':      result = addStars(body.child_id, body.amount, body.reason);   break
+      case 'addStars':      result = addStars(body.child_id, body.amount, body.reason);            break
+      case 'addStarBonus': result = addStarBonus(body.child_id, body.amount, body.reason, body.date); break
       case 'spendStars':    result = spendStars(body.child_id, body.amount, body.reason); break
       case 'saveSubjects':  result = saveSubjects(body.child_id, body.date, body.subjects); break
       case 'addChoreTask':  result = addChoreTask(body.child_id, body.date, body.label);  break
@@ -187,6 +188,19 @@ function addStars(childId, amount, reason) {
     .getSheetByName(SHEET_LEDGER)
     .appendRow([childId, todayStr(), 'earn', amount, reason, newBalance])
   return { ok: true, balance: newBalance }
+}
+
+// 家長手動補給星星（可指定日期）
+function addStarBonus(childId, amount, reason, date) {
+  if (!childId) return { error: 'child_id 必填' }
+  if (!amount || Number(amount) <= 0) return { error: '星星數必須大於 0' }
+  const d          = date || todayStr()
+  const current    = getStarBalance(childId).balance
+  const newBalance = current + Number(amount)
+  SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName(SHEET_LEDGER)
+    .appendRow([childId, d, 'bonus', Number(amount), reason || '家長補給', newBalance])
+  return { ok: true, balance: newBalance, starsAdded: Number(amount) }
 }
 
 function spendStars(childId, amount, reason) {

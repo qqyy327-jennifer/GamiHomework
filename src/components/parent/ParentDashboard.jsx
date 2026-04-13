@@ -3,11 +3,13 @@ import { useApp } from '../../contexts/AppContext'
 import ContactBookUpload from './ContactBookUpload'
 import TaskReview       from './TaskReview'
 import ConfigPanel      from './ConfigPanel'
+import StarBonus        from './StarBonus'
 
 const TABS = [
-  { id: 'review',   label: '審核任務', icon: '✅' },
-  { id: 'book',     label: '聯絡簿',   icon: '📖' },
-  { id: 'config',   label: '設定',     icon: '⚙️' },
+  { id: 'review',  label: '審核任務', icon: '✅' },
+  { id: 'book',    label: '聯絡簿',   icon: '📖' },
+  { id: 'stars',   label: '補給星星', icon: '⭐' },
+  { id: 'config',  label: '設定',     icon: '⚙️' },
 ]
 
 export default function ParentDashboard() {
@@ -40,6 +42,7 @@ export default function ParentDashboard() {
       <main className="flex-1 overflow-y-auto px-4 py-4">
         {tab === 'review' && <TaskReview />}
         {tab === 'book'   && <ContactBookUpload />}
+        {tab === 'stars'  && <StarBonus />}
         {tab === 'config' && <ConfigPanel />}
       </main>
 
