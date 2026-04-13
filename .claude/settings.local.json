@@ -2,9 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(/c/Program Files/nodejs/npm.cmd install)",
-      "Bash(PATH=\"/c/Program Files/nodejs:$PATH\" /c/Program Files/nodejs/npm.cmd install)",
-      "mcp__Claude_Preview__preview_start"
+      "Read(//c/Program Files/nodejs//**)",
+      "Read(//c/Users/qqyy3/AppData/Roaming/**)",
+      "Read(//c/Users/qqyy3/**)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs\")",
+      "Bash(npm run:*)",
+      "Bash(git add:*)"
     ]
   }
 }

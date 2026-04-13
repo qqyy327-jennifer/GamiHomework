@@ -1,194 +1,231 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 
 const GAS_URL = import.meta.env.VITE_GAS_URL || ''
+const DEV = !GAS_URL
 
-// 孩子設定
-export const CHILDREN = {
-  jasper: { name: 'Jasper', emoji: '🧒', color: 'mario-blue' },
-  terry:  { name: 'Terry',  emoji: '👦', color: 'mario-green' },
+const CTX = createContext(null)
+export const useApp = () => useContext(CTX)
+
+// ── Default tasks for dev/mock mode ───────────────────────────────────────
+
+function mockTasks(child) {
+  const subjects = child === 'jasper' ? [
+    { taskName: '國語', taskType: 'subject', value: 1, status: 'Pending', extra: '' },
+    { taskName: '數學', taskType: 'subject', value: 1, status: 'Pending', extra: '' },
+    { taskName: '英文', taskType: 'subject', value: 1, status: 'Pending', extra: '' },
+    { taskName: '跳繩', taskType: 'jumprope', value: 2, status: 'Pending', extra: '' },
+  ] : []
+  return [
+    ...subjects,
+    { taskName: '整理書包', taskType: 'daily',  value: 1, status: 'Pending', extra: '' },
+    { taskName: '擦桌子',   taskType: 'chore',   value: 1, status: 'Pending', extra: '' },
+    { taskName: '摺衣服',   taskType: 'chore',   value: 1, status: 'Pending', extra: '' },
+    { taskName: '掃樓梯',   taskType: 'chore',   value: 1, status: 'Pending', extra: '' },
+    { taskName: '收玩具',   taskType: 'chore',   value: 1, status: 'Pending', extra: '' },
+  ]
 }
 
-const AppContext = createContext(null)
+function todayStr() {
+  const d = new Date()
+  const mm = d.getMonth() + 1
+  const dd = d.getDate()
+  return `${d.getFullYear()}-${mm < 10 ? '0'+mm : mm}-${dd < 10 ? '0'+dd : dd}`
+}
+
+// ── API helpers ────────────────────────────────────────────────────────────
+
+async function gasGet(params) {
+  const qs = new URLSearchParams(params)
+  const r = await fetch(`${GAS_URL}?${qs}`)
+  return r.json()
+}
+
+async function gasPost(body) {
+  const r = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  return r.json()
+}
+
+// ── Provider ──────────────────────────────────────────────────────────────
 
 export function AppProvider({ children }) {
-  const [role, setRole]           = useState(null)      // 'jasper' | 'terry' | 'parent' | null
-  const [stars, setStars]         = useState(0)
-  const [streak, setStreak]       = useState(0)
-  const [tasks, setTasks]         = useState([])
-  const [config, setConfig]       = useState({})
-  const [loading, setLoading]     = useState(false)
-  const [toast, setToast]         = useState(null)
-  const [starBurst, setStarBurst] = useState(false)
+  const [role, setRole] = useState(null)
+  const [currentChild, setCurrentChild] = useState('jasper')
+  const [selectedDate, setSelectedDate] = useState(todayStr())
+  const [tasks, setTasks] = useState({ jasper: [], terry: [] })
+  const [balance, setBalance] = useState({ jasper: 0, terry: 0 })
+  const [streak, setStreak] = useState({ jasper: 0, terry: 0 })
+  const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
 
-  // 計算屬性
-  const isParent = role === 'parent'
-  const childId  = isParent ? null : role                     // 'jasper' | 'terry'
-  const childInfo = childId ? CHILDREN[childId] : null
+  // ── Toast ────────────────────────────────────────────────────────────────
 
-  // ── API ─────────────────────────────────────────────────────
-
-  const apiGet = useCallback(async (action, params = {}) => {
-    const qs = new URLSearchParams({ action, ...params }).toString()
-    const res = await fetch(`${GAS_URL}?${qs}`)
-    return res.json()
-  }, [])
-
-  const apiPost = useCallback(async (body) => {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
-    return res.json()
-  }, [])
-
-  // ── 載入資料（依 childId 過濾）──────────────────────────────
-
-  const loadAll = useCallback(async (cid) => {
-    if (!GAS_URL) return
-    const id = cid || childId
-    if (!id) return
-    setLoading(true)
-    try {
-      const [tasksRes, starsRes, streakRes, configRes] = await Promise.all([
-        apiGet('getTodayTasks', { child_id: id }),
-        apiGet('getStarBalance', { child_id: id }),
-        apiGet('getStreak', { child_id: id }),
-        apiGet('getConfig'),
-      ])
-      setTasks(tasksRes.tasks || [])
-      setStars(starsRes.balance || 0)
-      setStreak(streakRes.streak || 0)
-      setConfig(configRes || {})
-    } finally {
-      setLoading(false)
-    }
-  }, [apiGet, childId])
-
-  // ── 家長載入全部兩個孩子的待審核任務 ──────────────────────
-
-  const loadParentTasks = useCallback(async () => {
-    if (!GAS_URL) return
-    setLoading(true)
-    try {
-      const [jasperRes, terryRes, configRes] = await Promise.all([
-        apiGet('getTodayTasks', { child_id: 'jasper' }),
-        apiGet('getTodayTasks', { child_id: 'terry' }),
-        apiGet('getConfig'),
-      ])
-      const combined = [
-        ...(jasperRes.tasks || []).map(t => ({ ...t, childId: 'jasper' })),
-        ...(terryRes.tasks  || []).map(t => ({ ...t, childId: 'terry'  })),
-      ]
-      setTasks(combined)
-      setConfig(configRes || {})
-    } finally {
-      setLoading(false)
-    }
-  }, [apiGet])
-
-  // ── 登入 ────────────────────────────────────────────────────
-
-  const login = useCallback(async (pin, targetRole) => {
-    if (!GAS_URL) {
-      setRole(targetRole)
-      return { ok: true }
-    }
-    const res = await apiPost({ action: 'checkPin', pin, role: targetRole })
-    if (res.ok) {
-      setRole(targetRole)
-      if (targetRole === 'parent') {
-        await loadParentTasks()
-      } else {
-        await loadAll(targetRole)
-      }
-    }
-    return res
-  }, [apiPost, loadAll, loadParentTasks])
-
-  const logout = () => {
-    setRole(null)
-    setTasks([])
-    setStars(0)
-    setStreak(0)
-  }
-
-  // ── 任務操作 ─────────────────────────────────────────────────
-
-  const completeTask = useCallback(async (rowId, fileUrl) => {
-    const res = await apiPost({ action: 'completeTask', rowId, fileUrl, child_id: childId })
-    if (res.ok) {
-      // 優先用後端回傳的絕對餘額，避免前端累加誤差
-      if (res.balance != null) {
-        setStars(res.balance)
-      } else {
-        setStars(s => s + (res.starsAwarded || 0))
-      }
-      setTasks(prev => prev.map(t => t.rowId === rowId ? { ...t, status: 'done' } : t))
-      triggerStarBurst()
-      showToast(`獲得 ${res.starsAwarded || 1} 顆星星！⭐`, 'success')
-    }
-    return res
-  }, [apiPost, childId])
-
-  const spendStars = useCallback(async (amount, reason) => {
-    const res = await apiPost({ action: 'spendStars', amount, reason, child_id: childId })
-    if (res.ok) setStars(res.balance)
-    return res
-  }, [apiPost, childId])
-
-  const saveSubjects = useCallback(async (subjects) => {
-    const res = await apiPost({ action: 'saveSubjects', subjects, child_id: childId })
-    if (res.ok) await loadAll()
-    return res
-  }, [apiPost, childId, loadAll])
-
-  const uploadFile = useCallback(async (file, subfolder) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = async (e) => {
-        const base64 = e.target.result.split(',')[1]
-        const res = await apiPost({
-          action: 'uploadFile',
-          base64,
-          mimeType: file.type,
-          filename: file.name,
-          subfolder,
-        })
-        resolve(res)
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-  }, [apiPost])
-
-  // ── UI 輔助 ──────────────────────────────────────────────────
-
-  const showToast = (msg, type = 'info') => {
+  const showToast = useCallback((msg, type = 'success') => {
+    clearTimeout(toastTimer.current)
     setToast({ msg, type })
-    setTimeout(() => setToast(null), 2500)
-  }
+    toastTimer.current = setTimeout(() => setToast(null), 2500)
+  }, [])
 
-  const triggerStarBurst = () => {
-    setStarBurst(true)
-    setTimeout(() => setStarBurst(false), 800)
-  }
+  // ── Load tasks ───────────────────────────────────────────────────────────
+
+  const loadTasks = useCallback(async (child, date) => {
+    if (DEV) {
+      setTasks(prev => ({ ...prev, [child]: mockTasks(child) }))
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await gasGet({ action: 'getTasks', child, date })
+      if (res.tasks) setTasks(prev => ({ ...prev, [child]: res.tasks }))
+    } catch (e) {
+      showToast('載入失敗', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [showToast])
+
+  // ── Load balance + streak ─────────────────────────────────────────────────
+
+  const loadBalance = useCallback(async (child) => {
+    if (DEV) return
+    try {
+      const [b, s] = await Promise.all([
+        gasGet({ action: 'getBalance', child }),
+        gasGet({ action: 'getStreak', child }),
+      ])
+      if (b.balance !== undefined) setBalance(prev => ({ ...prev, [child]: b.balance }))
+      if (s.streak  !== undefined) setStreak(prev =>  ({ ...prev, [child]: s.streak  }))
+    } catch (_) {}
+  }, [])
+
+  // ── Complete task ─────────────────────────────────────────────────────────
+
+  const completeTask = useCallback(async (child, date, taskName, extra) => {
+    const childTasks = tasks[child] || []
+    const task = childTasks.find(t => t.taskName === taskName)
+    if (!task || task.status === 'Completed') return null
+
+    // Optimistic update
+    setTasks(prev => ({
+      ...prev,
+      [child]: prev[child].map(t =>
+        t.taskName === taskName ? { ...t, status: 'Completed', extra: extra || '' } : t
+      ),
+    }))
+    setBalance(prev => ({ ...prev, [child]: prev[child] + task.value }))
+
+    if (DEV) return { stars: task.value, streakBonus: 0 }
+
+    try {
+      const res = await gasPost({
+        action: 'completeTask', child, date,
+        taskName: task.taskName, taskType: task.taskType,
+        value: task.value, extra: extra || '',
+      })
+      if (res.streakBonus > 0) {
+        setBalance(prev => ({ ...prev, [child]: prev[child] + res.streakBonus }))
+        setStreak(prev => ({ ...prev, [child]: 5 }))
+        showToast(`🎉 連續5天達成！+${res.streakBonus}⭐`, 'success')
+      }
+      await loadBalance(child)
+      return res
+    } catch (_) {
+      return { stars: task.value, streakBonus: 0 }
+    }
+  }, [tasks, loadBalance, showToast])
+
+  // ── Uncomplete task ────────────────────────────────────────────────────────
+
+  const uncompleteTask = useCallback(async (child, date, taskName) => {
+    const task = (tasks[child] || []).find(t => t.taskName === taskName)
+    if (!task || task.status === 'Pending') return
+
+    setTasks(prev => ({
+      ...prev,
+      [child]: prev[child].map(t =>
+        t.taskName === taskName ? { ...t, status: 'Pending', extra: '' } : t
+      ),
+    }))
+    setBalance(prev => ({ ...prev, [child]: Math.max(0, prev[child] - task.value) }))
+
+    if (!DEV) {
+      await gasPost({ action: 'uncompleteTask', child, date, taskName })
+      await loadBalance(child)
+    }
+  }, [tasks, loadBalance])
+
+  // ── Add custom task ────────────────────────────────────────────────────────
+
+  const addCustomTask = useCallback(async (child, date, taskName) => {
+    const newTask = { taskName, taskType: 'custom', value: 2, status: 'Pending', extra: '' }
+    setTasks(prev => ({ ...prev, [child]: [...prev[child], newTask] }))
+
+    if (!DEV) {
+      await gasPost({ action: 'addCustomTask', child, date, taskName })
+    }
+    return newTask
+  }, [])
+
+  // ── Parent: manual star ────────────────────────────────────────────────────
+
+  const addManualStar = useCallback(async (child, amount, reason) => {
+    setBalance(prev => ({ ...prev, [child]: Math.max(0, prev[child] + amount) }))
+    if (!DEV) await gasPost({ action: 'addManualStar', child, amount, reason })
+    showToast(`${amount > 0 ? '+' : ''}${amount}⭐ 已記錄`, 'success')
+  }, [showToast])
+
+  // ── Parent: redeem reward ─────────────────────────────────────────────────
+
+  const redeemReward = useCallback(async (child, rewardName, cost) => {
+    if (balance[child] < cost) {
+      showToast('星星不足', 'error')
+      return false
+    }
+    setBalance(prev => ({ ...prev, [child]: prev[child] - cost }))
+    if (!DEV) await gasPost({ action: 'redeemReward', child, rewardName, cost })
+    showToast(`🎁 兌換成功：${rewardName}`, 'success')
+    return true
+  }, [balance, showToast])
+
+  // ── Parent: AI contact book parse ─────────────────────────────────────────
+
+  const parseContactBook = useCallback(async (imageBase64) => {
+    if (DEV) return { tasks: [{ subject: '國語', description: '第12頁寫生字' }, { subject: '數學', description: '第8頁計算' }] }
+    const res = await gasPost({ action: 'parseContactBook', imageBase64 })
+    return res
+  }, [])
+
+  // ── Load on child/date change ─────────────────────────────────────────────
+
+  useEffect(() => {
+    if (role === 'child') {
+      loadTasks(currentChild, selectedDate)
+      loadBalance(currentChild)
+    }
+  }, [role, currentChild, selectedDate, loadTasks, loadBalance])
+
+  const logout = useCallback(() => {
+    setRole(null)
+    setCurrentChild('jasper')
+    setSelectedDate(todayStr())
+  }, [])
 
   const value = {
-    role, isParent, childId, childInfo,
-    login, logout,
-    stars, streak, tasks, config,
-    loading, toast, starBurst,
-    loadAll, loadParentTasks, completeTask, spendStars, saveSubjects, uploadFile,
-    showToast, triggerStarBurst,
-    apiGet, apiPost,
-    GAS_READY: !!GAS_URL,
+    role, setRole,
+    currentChild, setCurrentChild,
+    selectedDate, setSelectedDate,
+    tasks, balance, streak, loading,
+    toast, showToast,
+    completeTask, uncompleteTask, addCustomTask,
+    addManualStar, redeemReward, parseContactBook,
+    loadTasks, loadBalance,
+    logout,
+    DEV,
   }
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
-}
-
-export const useApp = () => {
-  const ctx = useContext(AppContext)
-  if (!ctx) throw new Error('useApp must be used inside AppProvider')
-  return ctx
+  return <CTX.Provider value={value}>{children}</CTX.Provider>
 }

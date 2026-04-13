@@ -1,76 +1,287 @@
-import { useState } from 'react'
-import { useApp } from '../../contexts/AppContext'
-import ContactBookUpload from './ContactBookUpload'
-import TaskReview       from './TaskReview'
-import ConfigPanel      from './ConfigPanel'
-import StarBonus        from './StarBonus'
+import { useState, useRef } from 'react'
+import { LogOut, Star, Gift, FlaskConical, Plus, Minus, Upload, Loader } from 'lucide-react'
+import { useApp } from '../../contexts/AppContext.jsx'
 
-const TABS = [
-  { id: 'review',  label: '審核任務', icon: '✅' },
-  { id: 'book',    label: '聯絡簿',   icon: '📖' },
-  { id: 'stars',   label: '補給星星', icon: '⭐' },
-  { id: 'config',  label: '設定',     icon: '⚙️' },
+// ── Rewards catalogue ──────────────────────────────────────────────────────
+
+const REWARDS = [
+  { name: '玩桌遊',       cost: 5,  emoji: '🎲' },
+  { name: '打電動 20分',  cost: 8,  emoji: '🎮' },
+  { name: '買書',         cost: 6,  emoji: '📚' },
+  { name: '吃糖',         cost: 3,  emoji: '🍬' },
+  { name: '看電視 20分',  cost: 5,  emoji: '📺' },
 ]
 
-export default function ParentDashboard() {
-  const { stars, streak, tasks, logout, config } = useApp()
-  const [tab, setTab] = useState('review')
+// ── Tab bar ────────────────────────────────────────────────────────────────
 
-  const pendingApproval = tasks.filter(t => t.status === 'done')
-  const target = config.streakTarget || 5
+const TABS = [
+  { id: 'supply', label: '補給站',  Icon: Star },
+  { id: 'shop',   label: '兌換所',  Icon: Gift },
+  { id: 'ai',     label: 'AI 實驗室', Icon: FlaskConical },
+]
+
+// ── Star Supply ────────────────────────────────────────────────────────────
+
+function StarSupply() {
+  const { balance, addManualStar } = useApp()
+  const [child,  setChild]  = useState('jasper')
+  const [amount, setAmount] = useState('')
+  const [reason, setReason] = useState('')
+  const [sign,   setSign]   = useState(1)   // 1 = add, -1 = subtract
+
+  async function submit() {
+    const n = parseInt(amount, 10)
+    if (!n || n <= 0) return
+    if (!reason.trim()) return
+    await addManualStar(child, sign * n, reason.trim())
+    setAmount(''); setReason('')
+  }
 
   return (
-    <div className="min-h-screen flex flex-col max-w-md mx-auto">
+    <div className="flex flex-col gap-4">
+      {/* Balances */}
+      <div className="grid grid-cols-2 gap-3">
+        {['jasper','terry'].map(c => (
+          <div key={c} className="bg-amber-50 rounded-2xl p-4 text-center shadow-sm">
+            <div className="text-3xl mb-1">{c === 'jasper' ? '🦸' : '🌟'}</div>
+            <div className="font-bold capitalize">{c}</div>
+            <div className="text-2xl font-black text-amber-500">{balance[c]}⭐</div>
+          </div>
+        ))}
+      </div>
 
-      {/* Header */}
-      <header className="bg-mario-brown px-4 pt-10 pb-4 rounded-b-3xl shadow-lg">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={logout} className="text-white/70 text-sm">← 登出</button>
-          <span className="font-bold text-white">👨‍👩‍👧 家長模式</span>
-          <span className="text-mario-yellow font-bold">{stars} ⭐</span>
-        </div>
+      {/* Form */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+        <div className="font-bold text-gray-700">手動補給</div>
 
-        {/* 概況 */}
-        <div className="grid grid-cols-3 gap-2">
-          <StatCard label="今日任務" value={tasks.length} />
-          <StatCard label="待審核" value={pendingApproval.length} highlight />
-          <StatCard label={`連續天數`} value={`${streak}/${target}`} />
-        </div>
-      </header>
-
-      {/* 主內容 */}
-      <main className="flex-1 overflow-y-auto px-4 py-4">
-        {tab === 'review' && <TaskReview />}
-        {tab === 'book'   && <ContactBookUpload />}
-        {tab === 'stars'  && <StarBonus />}
-        {tab === 'config' && <ConfigPanel />}
-      </main>
-
-      {/* 底部導航 */}
-      <nav className="bg-white border-t border-gray-100 px-2 py-2 rounded-t-3xl shadow-lg">
-        <div className="flex">
-          {TABS.map(t => (
+        {/* Child selector */}
+        <div className="flex rounded-xl overflow-hidden border border-gray-200">
+          {[['jasper','🦸 Jasper'],['terry','🌟 Terry']].map(([id,label]) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex-1 flex flex-col items-center py-1 rounded-2xl transition-all
-                ${tab === t.id ? 'bg-mario-brown text-white scale-105' : 'text-gray-400'}`}
+              key={id}
+              onClick={() => setChild(id)}
+              className={`flex-1 py-2 font-bold text-sm
+                ${child === id ? 'bg-amber-400 text-white' : 'text-gray-400'}`}
             >
-              <span className="text-xl">{t.icon}</span>
-              <span className="text-xs font-bold">{t.label}</span>
+              {label}
             </button>
           ))}
         </div>
-      </nav>
+
+        {/* +/- toggle */}
+        <div className="flex rounded-xl overflow-hidden border border-gray-200">
+          {[[1,'+','bg-green-400'],[-1,'-','bg-red-400']].map(([s,label,color]) => (
+            <button
+              key={s}
+              onClick={() => setSign(s)}
+              className={`flex-1 py-2 font-bold text-sm
+                ${sign === s ? `${color} text-white` : 'text-gray-400'}`}
+            >
+              {label} 星星
+            </button>
+          ))}
+        </div>
+
+        <input
+          type="number" min="1" placeholder="數量"
+          value={amount} onChange={e => setAmount(e.target.value)}
+          className="border-2 border-gray-200 rounded-xl px-4 py-3 font-bold text-center text-lg"
+        />
+
+        <input
+          type="text" placeholder="補給原因（必填）"
+          value={reason} onChange={e => setReason(e.target.value)}
+          className="border-2 border-gray-200 rounded-xl px-4 py-3"
+        />
+
+        <button
+          onClick={submit}
+          disabled={!amount || !reason.trim()}
+          className="btn-child bg-amber-400 text-white disabled:opacity-40"
+        >
+          確認送出
+        </button>
+      </div>
     </div>
   )
 }
 
-function StatCard({ label, value, highlight }) {
+// ── Reward Shop ────────────────────────────────────────────────────────────
+
+function RewardShop() {
+  const { balance, redeemReward } = useApp()
+  const [child, setChild] = useState('jasper')
+
+  async function handleRedeem(reward) {
+    await redeemReward(child, reward.name, reward.cost)
+  }
+
   return (
-    <div className={`rounded-2xl p-2 text-center ${highlight && Number(value) > 0 ? 'bg-mario-red' : 'bg-white/20'}`}>
-      <p className="text-white/70 text-xs">{label}</p>
-      <p className="text-white font-bold text-xl">{value}</p>
+    <div className="flex flex-col gap-4">
+      {/* Child selector */}
+      <div className="flex rounded-xl overflow-hidden border border-gray-200 bg-white">
+        {[['jasper','🦸 Jasper'],['terry','🌟 Terry']].map(([id,label]) => (
+          <button
+            key={id}
+            onClick={() => setChild(id)}
+            className={`flex-1 py-3 font-bold text-sm
+              ${child === id ? 'bg-amber-400 text-white' : 'text-gray-400'}`}
+          >
+            {label} ({balance[id]}⭐)
+          </button>
+        ))}
+      </div>
+
+      {/* Reward cards */}
+      {REWARDS.map(r => {
+        const canAfford = balance[child] >= r.cost
+        return (
+          <div
+            key={r.name}
+            className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4"
+          >
+            <span className="text-4xl">{r.emoji}</span>
+            <div className="flex-1">
+              <div className="font-bold text-gray-700">{r.name}</div>
+              <div className="text-amber-500 font-bold">{r.cost}⭐</div>
+            </div>
+            <button
+              onClick={() => handleRedeem(r)}
+              disabled={!canAfford}
+              className={`btn-child px-4 text-white text-sm
+                ${canAfford ? 'bg-amber-400' : 'bg-gray-200 text-gray-400'}`}
+            >
+              兌換
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── AI Lab ─────────────────────────────────────────────────────────────────
+
+function AILab() {
+  const { parseContactBook } = useApp()
+  const fileRef = useRef(null)
+  const [preview, setPreview] = useState(null)
+  const [result,  setResult]  = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  function onFile(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setResult(null)
+    const reader = new FileReader()
+    reader.onload = ev => setPreview(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  async function analyze() {
+    if (!preview) return
+    setLoading(true)
+    try {
+      const base64 = preview.split(',')[1]
+      const res = await parseContactBook(base64)
+      setResult(res)
+    } catch (e) {
+      setResult({ error: e.message })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="bg-white rounded-2xl p-4 shadow-sm text-sm text-gray-500 leading-relaxed">
+        上傳聯絡簿照片，AI（Gemini）自動辨識今日作業內容。
+      </div>
+
+      {/* Upload area */}
+      <div
+        onClick={() => fileRef.current?.click()}
+        className="border-2 border-dashed border-amber-300 rounded-2xl p-6 flex flex-col items-center gap-2
+          text-gray-400 cursor-pointer hover:border-amber-400 transition-colors bg-white"
+      >
+        {preview
+          ? <img src={preview} alt="preview" className="max-h-48 rounded-xl object-contain" />
+          : <><Upload size={32} className="text-amber-300" /><span>點擊上傳照片</span></>}
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+      </div>
+
+      <button
+        onClick={analyze}
+        disabled={!preview || loading}
+        className="btn-child bg-purple-500 text-white disabled:opacity-40 gap-2"
+      >
+        {loading ? <><Loader size={18} className="animate-spin" /> 辨識中…</> : '🔍 AI 解析'}
+      </button>
+
+      {/* Result */}
+      {result && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="font-bold text-gray-700 mb-2">解析結果</div>
+          {result.error
+            ? <div className="text-red-500 text-sm">{result.error}</div>
+            : result.tasks
+              ? (
+                <div className="flex flex-col gap-2">
+                  {result.tasks.map((t, i) => (
+                    <div key={i} className="bg-blue-50 rounded-xl px-3 py-2">
+                      <span className="font-bold text-blue-700">{t.subject}</span>
+                      <span className="text-gray-600 ml-2 text-sm">{t.description}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+              : <pre className="text-xs text-gray-500 whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Parent Dashboard ───────────────────────────────────────────────────────
+
+export default function ParentDashboard() {
+  const { logout } = useApp()
+  const [tab, setTab] = useState('supply')
+
+  return (
+    <div className="flex flex-col flex-1 pb-8">
+      {/* Header */}
+      <div className="bg-gray-700 px-4 pt-6 pb-4 rounded-b-3xl shadow-md flex items-center justify-between">
+        <div>
+          <div className="text-white font-black text-xl">🔐 家長專區</div>
+          <div className="text-gray-400 text-xs">Hero's Quest 管理後台</div>
+        </div>
+        <button onClick={logout} className="text-gray-400 p-2">
+          <LogOut size={20} />
+        </button>
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex border-b border-gray-200 bg-white shadow-sm">
+        {TABS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs font-bold transition-colors
+              ${tab === id ? 'text-amber-500 border-b-2 border-amber-400' : 'text-gray-400'}`}
+          >
+            <Icon size={18} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="flex-1 overflow-y-auto px-4 pt-4">
+        {tab === 'supply' && <StarSupply />}
+        {tab === 'shop'   && <RewardShop />}
+        {tab === 'ai'     && <AILab />}
+      </div>
     </div>
   )
 }

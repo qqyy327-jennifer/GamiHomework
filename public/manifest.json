@@ -1,14 +1,12 @@
 {
-  "name": "馬力歐作業闖關",
-  "short_name": "作業闖關",
-  "description": "用星星打敗作業魔王！",
-  "theme_color": "#E52521",
-  "background_color": "#FBBF24",
+  "name": "小英雄成長任務",
+  "short_name": "Hero's Quest",
+  "description": "Jasper & Terry 的遊戲化任務系統",
+  "start_url": ".",
   "display": "standalone",
-  "orientation": "portrait",
-  "start_url": "/",
+  "background_color": "#fdf8f0",
+  "theme_color": "#fbbf24",
   "icons": [
-    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "star.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

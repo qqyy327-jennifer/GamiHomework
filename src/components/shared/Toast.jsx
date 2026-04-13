@@ -1,14 +1,18 @@
-export default function Toast({ msg, type = 'info' }) {
-  const colors = {
-    success: 'bg-mario-green text-white',
-    error:   'bg-mario-red text-white',
-    info:    'bg-mario-blue text-white',
-  }
+import { useApp } from '../../contexts/AppContext.jsx'
+
+export default function Toast() {
+  const { toast } = useApp()
+  if (!toast) return null
+
+  const bg = toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+
   return (
-    <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-50
-      ${colors[type]} px-6 py-3 rounded-2xl shadow-xl
-      text-sm font-bold animate-starPop whitespace-nowrap`}>
-      {msg}
+    <div
+      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl
+        text-white font-bold text-sm shadow-lg pointer-events-none
+        animate-bounce ${bg}`}
+    >
+      {toast.msg}
     </div>
   )
 }

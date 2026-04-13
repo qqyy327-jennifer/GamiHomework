@@ -2,35 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  html { -webkit-tap-highlight-color: transparent; }
-  body { @apply font-round select-none bg-mario-sky; }
+* { -webkit-tap-highlight-color: transparent; }
+
+body {
+  background-color: #fdf8f0;
+  font-family: 'Helvetica Neue', Arial, 'Noto Sans TC', sans-serif;
+  overscroll-behavior: none;
 }
 
-@layer components {
-  /* 馬力歐磚塊風格按鈕：底部深色陰影模擬 3D 深度 */
-  .btn-mario {
-    @apply rounded-xl font-bold text-white
-           transition-all duration-75 cursor-pointer
-           flex items-center justify-center gap-2
-           border-b-4 active:border-b-0 active:translate-y-1;
-  }
-  .btn-red    { @apply btn-mario bg-mario-red    border-mario-redDark; }
-  .btn-blue   { @apply btn-mario bg-mario-blue   border-mario-blueDark; }
-  .btn-green  { @apply btn-mario bg-mario-green  border-mario-greenDk; }
-  .btn-yellow { @apply btn-mario bg-mario-yellow border-mario-yellowDk text-mario-brown; }
+.btn-child {
+  @apply flex items-center justify-center gap-2 rounded-2xl font-bold
+    transition-all duration-150 active:scale-95 select-none cursor-pointer;
+  min-height: 60px;
+}
 
-  /* 問號磚塊風格數字鍵 */
-  .key-block {
-    @apply btn-mario bg-mario-ground border-mario-yellowDk
-           text-mario-brown font-black text-xl
-           rounded-xl shadow-md;
-  }
+.task-row {
+  @apply flex items-center gap-3 rounded-2xl px-4 py-3 bg-white shadow-sm
+    transition-all duration-150 active:scale-95 cursor-pointer select-none;
+  min-height: 60px;
+}
 
-  .card {
-    @apply bg-white rounded-3xl shadow-md p-4;
-  }
-  .task-done {
-    @apply opacity-60 line-through;
-  }
+.task-row.done {
+  @apply bg-green-50 opacity-80;
+}
+
+/* Terry big-card style */
+.terry-card {
+  @apply flex flex-col items-center justify-center gap-1 rounded-3xl
+    font-bold transition-all duration-150 active:scale-95 select-none cursor-pointer;
+  min-height: 100px;
+}
+
+.terry-card.done {
+  @apply opacity-60;
 }
