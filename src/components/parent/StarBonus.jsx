@@ -32,9 +32,9 @@ export default function StarBonus() {
       const res = await apiPost({
         action: 'addStarBonus',
         child_id: child,
-        amount:   finalAmount,
-        reason:   reason.trim(),
-        date,
+        amount:     finalAmount,
+        reason:     reason.trim(),
+        bonusDate:  date,
       })
       if (res.ok) {
         setLog(prev => [{
