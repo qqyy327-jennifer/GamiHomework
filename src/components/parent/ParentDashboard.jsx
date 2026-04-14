@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { LogOut, Star, Gift, FlaskConical, Plus, Minus, Upload, Loader } from 'lucide-react'
 import { useApp } from '../../contexts/AppContext.jsx'
+import { Avatar } from '../shared/Avatars.jsx'
 
 // ── Rewards catalogue ──────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ function StarSupply() {
       <div className="grid grid-cols-2 gap-3">
         {['jasper','terry'].map(c => (
           <div key={c} className="bg-amber-50 rounded-2xl p-4 text-center shadow-sm">
-            <div className="text-3xl mb-1">{c === 'jasper' ? '👦' : '🧒'}</div>
+            <div className="flex justify-center mb-1"><Avatar child={c} size={48} /></div>
             <div className="font-bold capitalize">{c}</div>
             <div className="text-2xl font-black text-amber-500">{balance[c]}⭐</div>
           </div>
@@ -56,14 +57,15 @@ function StarSupply() {
 
         {/* Child selector */}
         <div className="flex rounded-xl overflow-hidden border border-gray-200">
-          {[['jasper','👦 Jasper'],['terry','🧒 Terry']].map(([id,label]) => (
+          {(['jasper','terry']).map(id => (
             <button
               key={id}
               onClick={() => setChild(id)}
-              className={`flex-1 py-2 font-bold text-sm
+              className={`flex-1 flex items-center justify-center gap-1 py-2 font-bold text-sm
                 ${child === id ? 'bg-amber-400 text-white' : 'text-gray-400'}`}
             >
-              {label}
+              <Avatar child={id} size={20} />
+              <span className="capitalize">{id === 'jasper' ? 'Jasper' : 'Terry'}</span>
             </button>
           ))}
         </div>
@@ -120,14 +122,15 @@ function RewardShop() {
     <div className="flex flex-col gap-4">
       {/* Child selector */}
       <div className="flex rounded-xl overflow-hidden border border-gray-200 bg-white">
-        {[['jasper','👦 Jasper'],['terry','🧒 Terry']].map(([id,label]) => (
+        {(['jasper','terry']).map(id => (
           <button
             key={id}
             onClick={() => setChild(id)}
-            className={`flex-1 py-3 font-bold text-sm
+            className={`flex-1 flex items-center justify-center gap-1 py-3 font-bold text-sm
               ${child === id ? 'bg-amber-400 text-white' : 'text-gray-400'}`}
           >
-            {label} ({balance[id]}⭐)
+            <Avatar child={id} size={20} />
+            <span>{id === 'jasper' ? 'Jasper' : 'Terry'} ({balance[id]}⭐)</span>
           </button>
         ))}
       </div>

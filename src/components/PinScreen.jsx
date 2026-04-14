@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../contexts/AppContext.jsx'
 import { Star, Shield } from 'lucide-react'
+import { JasperAvatar, TerryAvatar } from './shared/Avatars.jsx'
 
 const CHILD_PIN  = import.meta.env.VITE_CHILD_PIN  || '1234'
 const PARENT_PIN = import.meta.env.VITE_PARENT_PIN || '5678'
@@ -53,7 +54,11 @@ export default function PinScreen() {
 
       {/* Title */}
       <div className="text-center">
-        <div className="text-5xl mb-2">{mode === 'child' ? '👦' : '🔐'}</div>
+        <div className="flex justify-center gap-3 mb-2">
+          {mode === 'child'
+            ? <><JasperAvatar size={52} /><TerryAvatar size={52} /></>
+            : <span className="text-5xl">🔐</span>}
+        </div>
         <div className="text-xl font-bold text-gray-700">
           {mode === 'child' ? '歡迎回來，小英雄！' : '家長專區'}
         </div>

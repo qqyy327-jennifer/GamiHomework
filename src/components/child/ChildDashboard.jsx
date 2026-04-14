@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import confetti from 'canvas-confetti'
 import { Mic, MicOff, LogOut, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import { useApp } from '../../contexts/AppContext.jsx'
+import { Avatar } from '../shared/Avatars.jsx'
 
 // ── Audio feedback ─────────────────────────────────────────────────────────
 
@@ -273,14 +274,15 @@ export default function ChildDashboard() {
         <div className="flex items-center justify-between mb-3">
           <button onClick={logout} className="text-amber-700 p-1"><LogOut size={18} /></button>
           <div className="flex rounded-2xl overflow-hidden bg-amber-300 shadow-inner">
-            {[['jasper','👦 Jasper'],['terry','🧒 Terry']].map(([id, label]) => (
+            {(['jasper','terry']).map(id => (
               <button
                 key={id}
                 onClick={() => setCurrentChild(id)}
-                className={`px-4 py-2 font-bold text-sm transition-colors
+                className={`flex items-center gap-1 px-4 py-2 font-bold text-sm transition-colors
                   ${currentChild === id ? 'bg-white text-amber-600' : 'text-amber-700'}`}
               >
-                {label}
+                <Avatar child={id} size={22} />
+                <span className="capitalize">{id === 'jasper' ? 'Jasper' : 'Terry'}</span>
               </button>
             ))}
           </div>
