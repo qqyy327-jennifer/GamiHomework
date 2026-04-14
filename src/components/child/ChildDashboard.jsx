@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import confetti from 'canvas-confetti'
-import { Mic, MicOff, LogOut, ChevronLeft, ChevronRight, Check } from 'lucide-react'
+import { Mic, MicOff, LogOut, Check, Plus } from 'lucide-react'
 import { useApp } from '../../contexts/AppContext.jsx'
 
 // ── Audio feedback ─────────────────────────────────────────────────────────
@@ -69,73 +69,48 @@ function StreakBar({ count }) {
   )
 }
 
-// ── Task type icons + labels ───────────────────────────────────────────────
+// ── Task emoji helpers ─────────────────────────────────────────────────────
 
-const ICONS = {
-  subject:  { emoji: '📚', color: 'bg-blue-100',   text: 'text-blue-700'   },
-  jumprope: { emoji: '🪢', color: 'bg-purple-100', text: 'text-purple-700' },
-  daily:    { emoji: '🎒', color: 'bg-amber-100',  text: 'text-amber-700'  },
-  chore:    { emoji: '🧹', color: 'bg-green-100',  text: 'text-green-700'  },
-  custom:   { emoji: '⭐', color: 'bg-pink-100',   text: 'text-pink-700'   },
+const CHORE_EMOJI    = { '擦桌子':'🧹','摺衣服':'👕','掃樓梯':'🧺','收玩具':'🧸','整理書包':'🎒' }
+const SUBJECT_EMOJI  = { '國語':'📖','英文':'🔤','數學':'📐','ㄅㄆㄇ':'🔡' }
+const taskEmoji = t => CHORE_EMOJI[t.taskName] || SUBJECT_EMOJI[t.taskName] || '⭐'
+
+// ── Quick-pick presets ─────────────────────────────────────────────────────
+
+const PRESETS = {
+  jasper: ['國語', '英文', '數學'],
+  terry:  ['ㄅㄆㄇ', '數學', '英文'],
 }
-const CHORE_EMOJI = { '擦桌子':'🧹','摺衣服':'👕','掃樓梯':'🧺','收玩具':'🧸' }
-const SUBJECT_EMOJI = { '國語':'📖','數學':'📐','英文':'🔤' }
-const taskEmoji = t => CHORE_EMOJI[t.taskName] || SUBJECT_EMOJI[t.taskName] || ICONS[t.taskType]?.emoji || '⭐'
 
-// ── Jasper task row ────────────────────────────────────────────────────────
+// ── Task row (list style) ──────────────────────────────────────────────────
 
-function JasperRow({ task, onToggle }) {
-  const [jumpVal, setJumpVal] = useState(task.extra || '')
+function TaskRow({ task, onToggle }) {
   const done = task.status === 'Completed'
-  const style = ICONS[task.taskType] || ICONS.custom
-
-  if (task.taskType === 'jumprope') {
-    return (
-      <div className={`task-row ${done ? 'done' : ''}`}>
-        <span className="text-2xl">{taskEmoji(task)}</span>
-        <span className="flex-1 font-bold text-gray-700">{task.taskName}</span>
-        {done
-          ? <span className="text-green-500 font-bold text-sm">✓ {task.extra} 下</span>
-          : (
-            <div className="flex items-center gap-2">
-              <input
-                type="number" min="0" placeholder="次數"
-                value={jumpVal}
-                onChange={e => setJumpVal(e.target.value)}
-                onClick={e => e.stopPropagation()}
-                className="w-20 border-2 border-amber-300 rounded-xl px-2 py-1 text-center font-bold"
-              />
-              <button
-                onClick={() => { if (jumpVal) onToggle(task, jumpVal) }}
-                className="bg-amber-400 text-white rounded-xl px-3 py-1 font-bold"
-              >完成</button>
-            </div>
-          )}
-        <span className={`text-xs font-bold px-2 py-1 rounded-lg ${style.color} ${style.text}`}>
-          +{task.value}⭐
-        </span>
-      </div>
-    )
-  }
-
   return (
-    <div className={`task-row ${done ? 'done' : ''}`} onClick={() => onToggle(task)}>
-      <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${done ? 'bg-green-400' : 'bg-gray-100'}`}>
-        {done ? <Check size={16} className="text-white" /> : <span className="text-lg">{taskEmoji(task)}</span>}
+    <div
+      className={`task-row ${done ? 'done' : ''}`}
+      onClick={() => onToggle(task)}
+    >
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0
+        ${done ? 'bg-green-400' : 'bg-gray-100'}`}>
+        {done
+          ? <Check size={16} className="text-white" />
+          : <span className="text-lg">{taskEmoji(task)}</span>}
       </div>
       <span className={`flex-1 font-bold ${done ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
         {task.taskName}
       </span>
-      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${style.color} ${style.text}`}>
-        +{task.value}⭐
+      <span className={`text-xs font-bold px-2 py-1 rounded-lg
+        ${done ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-700'}`}>
+        +1⭐
       </span>
     </div>
   )
 }
 
-// ── Terry task card ────────────────────────────────────────────────────────
+// ── Task card (grid style, for Terry) ─────────────────────────────────────
 
-const TERRY_COLORS = [
+const CARD_COLORS = [
   'bg-blue-200 text-blue-800',
   'bg-green-200 text-green-800',
   'bg-purple-200 text-purple-800',
@@ -144,9 +119,9 @@ const TERRY_COLORS = [
   'bg-teal-200 text-teal-800',
 ]
 
-function TerryCard({ task, index, onToggle }) {
+function TaskCard({ task, index, onToggle }) {
   const done = task.status === 'Completed'
-  const color = TERRY_COLORS[index % TERRY_COLORS.length]
+  const color = CARD_COLORS[index % CARD_COLORS.length]
   return (
     <div
       className={`terry-card p-4 ${color} ${done ? 'done' : ''}`}
@@ -154,65 +129,12 @@ function TerryCard({ task, index, onToggle }) {
     >
       <span className="text-4xl">{done ? '✅' : taskEmoji(task)}</span>
       <span className="font-bold text-base mt-1">{task.taskName}</span>
-      <span className="text-xs font-bold opacity-70">+{task.value}⭐</span>
+      <span className="text-xs font-bold opacity-70">+1⭐</span>
     </div>
   )
 }
 
-// ── Voice button ───────────────────────────────────────────────────────────
-
-function VoiceButton({ onResult, childName }) {
-  const [listening, setListening] = useState(false)
-  const recRef = useRef(null)
-
-  function start() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { alert('此裝置不支援語音辨識，請手動輸入'); return }
-    const rec = new SR()
-    rec.lang = 'zh-TW'
-    rec.interimResults = false
-    rec.onstart  = () => setListening(true)
-    rec.onend    = () => setListening(false)
-    rec.onerror  = () => setListening(false)
-    rec.onresult = e => {
-      const text = e.results[0][0].transcript.trim()
-      if (text) {
-        onResult(text)
-        if (childName === 'terry') {
-          const utt = new SpeechSynthesisUtterance(`好的，Terry 要幫忙${text}，太棒了！`)
-          utt.lang = 'zh-TW'
-          speechSynthesis.speak(utt)
-        }
-      }
-    }
-    recRef.current = rec
-    rec.start()
-  }
-
-  function stop() { recRef.current?.stop() }
-
-  return (
-    <button
-      onClick={listening ? stop : start}
-      className={`btn-child w-full gap-3 text-white font-bold
-        ${listening ? 'bg-red-400 animate-pulse' : 'bg-pink-400'}`}
-    >
-      {listening ? <MicOff size={20} /> : <Mic size={20} />}
-      {listening ? '說話中…點擊停止' : '🎙️ 語音新增家事 (+2⭐)'}
-    </button>
-  )
-}
-
 // ── Main dashboard ─────────────────────────────────────────────────────────
-
-const SECTION_ORDER = ['subject', 'jumprope', 'daily', 'chore', 'custom']
-const SECTION_LABELS = {
-  subject:  '📚 學科',
-  jumprope: '🪢 跳繩',
-  daily:    '🎒 日常',
-  chore:    '🧹 家事',
-  custom:   '⭐ 自訂家事',
-}
 
 export default function ChildDashboard() {
   const {
@@ -223,53 +145,73 @@ export default function ChildDashboard() {
     showToast, logout,
   } = useApp()
 
-  const childTasks = tasks[currentChild] || []
-  const today = todayStr()
+  const [inputText, setInputText]   = useState('')
+  const [listening, setListening]   = useState(false)
+  const recRef  = useRef(null)
+  const inputRef = useRef(null)
 
-  // Group tasks by type
-  const grouped = {}
-  for (const t of childTasks) {
-    const type = t.taskType || 'custom'
-    if (!grouped[type]) grouped[type] = []
-    grouped[type].push(t)
+  const childTasks = tasks[currentChild] || []
+  const today      = todayStr()
+
+  // ── Voice input ────────────────────────────────────────────────────────
+
+  function startVoice() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) { alert('此裝置不支援語音辨識，請手動輸入'); return }
+    const rec = new SR()
+    rec.lang = 'zh-TW'
+    rec.interimResults = false
+    rec.onstart  = () => setListening(true)
+    rec.onend    = () => setListening(false)
+    rec.onerror  = () => setListening(false)
+    rec.onresult = e => {
+      const text = e.results[0][0].transcript.trim()
+      if (text) setInputText(text)
+    }
+    recRef.current = rec
+    rec.start()
+  }
+  function stopVoice() { recRef.current?.stop() }
+
+  // ── Add task ───────────────────────────────────────────────────────────
+
+  async function handleAdd(name) {
+    const trimmed = (name || inputText).trim()
+    if (!trimmed) return
+    if (childTasks.some(t => t.taskName === trimmed)) {
+      showToast(`「${trimmed}」已在清單中`, 'error')
+      return
+    }
+    await addCustomTask(currentChild, selectedDate, trimmed)
+    showToast(`已新增：${trimmed}`)
+    setInputText('')
   }
 
-  // For Terry, hide subjects (not applicable)
-  const sections = SECTION_ORDER.filter(s => {
-    if (currentChild === 'terry' && s === 'subject') return false
-    if (currentChild === 'terry' && s === 'jumprope') return false
-    return grouped[s]?.length > 0 || s === 'custom'
-  })
+  // ── Complete / uncomplete ──────────────────────────────────────────────
 
-  async function handleToggle(task, extra) {
+  async function handleToggle(task) {
     if (task.status === 'Completed') {
       await uncompleteTask(currentChild, selectedDate, task.taskName)
     } else {
-      const res = await completeTask(currentChild, selectedDate, task.taskName, extra)
+      const res = await completeTask(currentChild, selectedDate, task.taskName)
       if (res) {
         celebrate()
-        showToast(`+${res.stars}⭐ ${task.taskName} 完成！`)
+        showToast(`+1⭐ ${task.taskName} 完成！`)
       }
     }
   }
 
-  async function handleVoiceResult(text) {
-    await addCustomTask(currentChild, selectedDate, text)
-    showToast(`已新增：${text}`)
-  }
-
-  // Date navigation (today + 4 days back)
-  const dateOptions = Array.from({ length: 5 }, (_, i) => addDays(today, -i))
-
+  // ── Date navigation ────────────────────────────────────────────────────
+  const dateOptions  = Array.from({ length: 5 }, (_, i) => addDays(today, -i))
   const completedCount = childTasks.filter(t => t.status === 'Completed').length
   const totalCount     = childTasks.length
   const progressPct    = totalCount ? Math.round(completedCount / totalCount * 100) : 0
 
   return (
     <div className="flex flex-col flex-1 pb-8">
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div className="bg-amber-400 px-4 pt-6 pb-4 rounded-b-3xl shadow-md">
-        {/* Child switcher */}
         <div className="flex items-center justify-between mb-3">
           <button onClick={logout} className="text-amber-700 p-1"><LogOut size={18} /></button>
           <div className="flex rounded-2xl overflow-hidden bg-amber-300 shadow-inner">
@@ -289,8 +231,6 @@ export default function ChildDashboard() {
             <div className="text-xs text-amber-700">星星存摺</div>
           </div>
         </div>
-
-        {/* Streak */}
         <div className="mb-1">
           <div className="flex justify-between text-xs text-amber-700 mb-1">
             <span>連續達成</span>
@@ -301,66 +241,120 @@ export default function ChildDashboard() {
       </div>
 
       <div className="flex-1 px-4 pt-4 flex flex-col gap-4 overflow-y-auto">
-        {/* Date picker */}
+
+        {/* ── Date picker ── */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {dateOptions.map(d => (
             <button
               key={d}
               onClick={() => setSelectedDate(d)}
               className={`flex-shrink-0 px-4 py-2 rounded-2xl font-bold text-sm transition-colors
-                ${selectedDate === d
-                  ? 'bg-amber-400 text-white shadow'
-                  : 'bg-white text-gray-500'}`}
+                ${selectedDate === d ? 'bg-amber-400 text-white shadow' : 'bg-white text-gray-500'}`}
             >
               {displayDate(d)}
             </button>
           ))}
         </div>
 
-        {/* Progress bar */}
-        <div>
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>今日進度</span>
-            <span>{completedCount}/{totalCount}</span>
+        {/* ── 新增任務區 ── */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+          <div className="text-sm font-bold text-gray-500">📌 新增今日任務</div>
+
+          {/* Quick-pick chips */}
+          <div className="flex gap-2 flex-wrap">
+            {PRESETS[currentChild].map(name => {
+              const already = childTasks.some(t => t.taskName === name)
+              return (
+                <button
+                  key={name}
+                  onClick={() => !already && handleAdd(name)}
+                  className={`px-4 py-2 rounded-2xl font-bold text-sm transition-all
+                    ${already
+                      ? 'bg-amber-400 text-white shadow-inner cursor-default'
+                      : 'bg-amber-50 text-amber-700 border-2 border-amber-300 active:scale-95'}`}
+                >
+                  {already ? `✓ ${name}` : name}
+                </button>
+              )
+            })}
           </div>
-          <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-amber-400 rounded-full transition-all"
-              style={{ width: `${progressPct}%` }}
+
+          {/* Text + voice input */}
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              value={inputText}
+              onChange={e => setInputText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              placeholder="輸入其他任務…"
+              className="flex-1 border-2 border-amber-300 rounded-2xl px-4 py-2 text-sm font-bold
+                focus:outline-none focus:border-amber-500"
             />
+            <button
+              onClick={listening ? stopVoice : startVoice}
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0
+                ${listening ? 'bg-red-400 animate-pulse' : 'bg-amber-100 text-amber-600'}`}
+            >
+              {listening ? <MicOff size={18} className="text-white" /> : <Mic size={18} />}
+            </button>
           </div>
+          <button
+            onClick={() => handleAdd()}
+            disabled={!inputText.trim()}
+            className="btn-child bg-amber-400 text-white disabled:opacity-40 gap-2"
+          >
+            <Plus size={18} /> 新增任務
+          </button>
         </div>
 
-        {/* Task sections — Jasper: list view, Terry: card grid */}
-        {currentChild === 'jasper' ? (
-          SECTION_ORDER.filter(s => grouped[s]?.length > 0).map(section => (
-            <div key={section}>
-              <div className="text-xs font-bold text-gray-400 mb-2 px-1">{SECTION_LABELS[section]}</div>
-              <div className="flex flex-col gap-2">
-                {grouped[section].map(task => (
-                  <JasperRow key={task.taskName} task={task} onToggle={handleToggle} />
-                ))}
+        {/* ── 今日任務清單 ── */}
+        {totalCount > 0 && (
+          <div className="flex flex-col gap-3">
+            <div className="text-sm font-bold text-gray-500">✅ 今日任務清單</div>
+
+            {/* Progress bar */}
+            <div>
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>完成進度</span>
+                <span>{completedCount}/{totalCount}</span>
+              </div>
+              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-400 rounded-full transition-all"
+                  style={{ width: `${progressPct}%` }}
+                />
               </div>
             </div>
-          ))
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {childTasks
-              .filter(t => t.taskType !== 'subject' && t.taskType !== 'jumprope')
-              .map((task, i) => (
-                <TerryCard key={task.taskName} task={task} index={i} onToggle={handleToggle} />
-              ))}
+
+            {/* Tasks */}
+            {currentChild === 'jasper' ? (
+              <div className="flex flex-col gap-2">
+                {childTasks.map(task => (
+                  <TaskRow key={task.taskName} task={task} onToggle={handleToggle} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {childTasks.map((task, i) => (
+                  <TaskCard key={task.taskName} task={task} index={i} onToggle={handleToggle} />
+                ))}
+              </div>
+            )}
+
+            {completedCount === totalCount && totalCount > 0 && (
+              <div className="text-center py-4 text-2xl font-black text-amber-500 animate-bounce">
+                🎉 全部完成！超棒的！
+              </div>
+            )}
           </div>
         )}
 
-        {/* Voice add custom chore */}
-        <VoiceButton onResult={handleVoiceResult} childName={currentChild} />
-
-        {completedCount === totalCount && totalCount > 0 && (
-          <div className="text-center py-4 text-2xl font-black text-amber-500 animate-bounce">
-            🎉 全部完成！超棒的！
+        {totalCount === 0 && (
+          <div className="text-center py-8 text-gray-300 text-sm">
+            還沒有任務，點上方新增今日功課吧！
           </div>
         )}
+
       </div>
     </div>
   )

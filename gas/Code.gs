@@ -15,21 +15,16 @@ function jsonOut(data) {
 
 // ── Default task definitions ───────────────────────────────────────────────
 
+// 學科由前端 quick-pick chips 新增；defaultTasks 只建立家事
 function defaultTasks(child) {
-  var subjects = child === 'jasper' ? [
-    { taskName: '\u570b\u8a9e', taskType: 'subject', value: 1 },
-    { taskName: '\u6578\u5b78', taskType: 'subject', value: 1 },
-    { taskName: '\u82f1\u6587', taskType: 'subject', value: 1 },
-    { taskName: '\u8df3\u7e69', taskType: 'jumprope', value: 2 }
-  ] : [];
-  var common = [
+  void child; // 兩人家事相同
+  return [
     { taskName: '\u6574\u7406\u66f8\u5305', taskType: 'daily', value: 1 },
-    { taskName: '\u64e6\u684c\u5b50', taskType: 'chore', value: 1 },
-    { taskName: '\u647a\u8863\u670d', taskType: 'chore', value: 1 },
-    { taskName: '\u6383\u6a13\u68af', taskType: 'chore', value: 1 },
-    { taskName: '\u6536\u73a9\u5177', taskType: 'chore', value: 1 }
+    { taskName: '\u64e6\u684c\u5b50',       taskType: 'chore', value: 1 },
+    { taskName: '\u647a\u8863\u670d',       taskType: 'chore', value: 1 },
+    { taskName: '\u6383\u6a13\u68af',       taskType: 'chore', value: 1 },
+    { taskName: '\u6536\u73a9\u5177',       taskType: 'chore', value: 1 }
   ];
-  return subjects.concat(common);
 }
 
 // ── GET handler ────────────────────────────────────────────────────────────

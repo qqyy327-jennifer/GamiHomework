@@ -9,14 +9,9 @@ export const useApp = () => useContext(CTX)
 // ── Default tasks for dev/mock mode ───────────────────────────────────────
 
 function mockTasks(child) {
-  const subjects = child === 'jasper' ? [
-    { taskName: '國語', taskType: 'subject', value: 1, status: 'Pending', extra: '' },
-    { taskName: '數學', taskType: 'subject', value: 1, status: 'Pending', extra: '' },
-    { taskName: '英文', taskType: 'subject', value: 1, status: 'Pending', extra: '' },
-    { taskName: '跳繩', taskType: 'jumprope', value: 2, status: 'Pending', extra: '' },
-  ] : []
+  // 學科由 quick-pick chips 手動新增，defaultTasks 只保留家事
+  void child
   return [
-    ...subjects,
     { taskName: '整理書包', taskType: 'daily',  value: 1, status: 'Pending', extra: '' },
     { taskName: '擦桌子',   taskType: 'chore',   value: 1, status: 'Pending', extra: '' },
     { taskName: '摺衣服',   taskType: 'chore',   value: 1, status: 'Pending', extra: '' },
@@ -163,7 +158,7 @@ export function AppProvider({ children }) {
   // ── Add custom task ────────────────────────────────────────────────────────
 
   const addCustomTask = useCallback(async (child, date, taskName) => {
-    const newTask = { taskName, taskType: 'custom', value: 2, status: 'Pending', extra: '' }
+    const newTask = { taskName, taskType: 'custom', value: 1, status: 'Pending', extra: '' }
     setTasks(prev => ({ ...prev, [child]: [...prev[child], newTask] }))
 
     if (!DEV) {
