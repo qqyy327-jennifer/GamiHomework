@@ -37,7 +37,8 @@ function todayStr() {
 async function gasGet(params) {
   const qs = new URLSearchParams(params)
   const r = await fetch(`${GAS_URL}?${qs}`)
-  return r.json()
+  const data = await r.json()
+  return data ?? {}
 }
 
 async function gasPost(body) {
@@ -46,7 +47,8 @@ async function gasPost(body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  return r.json()
+  const data = await r.json()
+  return data ?? {}
 }
 
 // ── Provider ──────────────────────────────────────────────────────────────
@@ -80,7 +82,7 @@ export function AppProvider({ children }) {
     setLoading(true)
     try {
       const res = await gasGet({ action: 'getTasks', child, date })
-      if (res.tasks) setTasks(prev => ({ ...prev, [child]: res.tasks }))
+      if (res?.tasks) setTasks(prev => ({ ...prev, [child]: res.tasks }))
     } catch (e) {
       showToast('載入失敗', 'error')
     } finally {
@@ -97,8 +99,8 @@ export function AppProvider({ children }) {
         gasGet({ action: 'getBalance', child }),
         gasGet({ action: 'getStreak', child }),
       ])
-      if (b.balance !== undefined) setBalance(prev => ({ ...prev, [child]: b.balance }))
-      if (s.streak  !== undefined) setStreak(prev =>  ({ ...prev, [child]: s.streak  }))
+      if (b?.balance !== undefined) setBalance(prev => ({ ...prev, [child]: b.balance }))
+      if (s?.streak  !== undefined) setStreak(prev =>  ({ ...prev, [child]: s.streak  }))
     } catch (_) {}
   }, [])
 
@@ -126,7 +128,7 @@ export function AppProvider({ children }) {
         taskName: task.taskName, taskType: task.taskType,
         value: task.value, extra: extra || '',
       })
-      if (res.streakBonus > 0) {
+      if (res?.streakBonus > 0) {
         setBalance(prev => ({ ...prev, [child]: prev[child] + res.streakBonus }))
         setStreak(prev => ({ ...prev, [child]: 5 }))
         showToast(`🎉 連續5天達成！+${res.streakBonus}⭐`, 'success')

@@ -7,7 +7,13 @@
       "Read(//c/Users/qqyy3/**)",
       "Bash(export PATH=\"$PATH:/c/Program Files/nodejs\")",
       "Bash(npm run:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(find /c/Users/qqyy3/GamiHomework -name *.test.* -o -name *.spec.* -o -name vitest.config* -o -name jest.config*)",
+      "Bash(npm test:*)",
+      "Bash(gh run:*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs:/c/Users/qqyy3/AppData/Local/Programs/GitHub CLI\")"
     ]
   }
 }
