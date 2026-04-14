@@ -273,7 +273,7 @@ export default function ChildDashboard() {
         <div className="flex items-center justify-between mb-3">
           <button onClick={logout} className="text-amber-700 p-1"><LogOut size={18} /></button>
           <div className="flex rounded-2xl overflow-hidden bg-amber-300 shadow-inner">
-            {[['jasper','🦸 Jasper'],['terry','🌟 Terry']].map(([id, label]) => (
+            {[['jasper','👦 Jasper'],['terry','🧒 Terry']].map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => setCurrentChild(id)}

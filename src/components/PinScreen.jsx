@@ -53,7 +53,7 @@ export default function PinScreen() {
 
       {/* Title */}
       <div className="text-center">
-        <div className="text-5xl mb-2">{mode === 'child' ? '🦸' : '🔐'}</div>
+        <div className="text-5xl mb-2">{mode === 'child' ? '👦' : '🔐'}</div>
         <div className="text-xl font-bold text-gray-700">
           {mode === 'child' ? '歡迎回來，小英雄！' : '家長專區'}
         </div>

@@ -43,7 +43,7 @@ function StarSupply() {
       <div className="grid grid-cols-2 gap-3">
         {['jasper','terry'].map(c => (
           <div key={c} className="bg-amber-50 rounded-2xl p-4 text-center shadow-sm">
-            <div className="text-3xl mb-1">{c === 'jasper' ? '🦸' : '🌟'}</div>
+            <div className="text-3xl mb-1">{c === 'jasper' ? '👦' : '🧒'}</div>
             <div className="font-bold capitalize">{c}</div>
             <div className="text-2xl font-black text-amber-500">{balance[c]}⭐</div>
           </div>
@@ -56,7 +56,7 @@ function StarSupply() {
 
         {/* Child selector */}
         <div className="flex rounded-xl overflow-hidden border border-gray-200">
-          {[['jasper','🦸 Jasper'],['terry','🌟 Terry']].map(([id,label]) => (
+          {[['jasper','👦 Jasper'],['terry','🧒 Terry']].map(([id,label]) => (
             <button
               key={id}
               onClick={() => setChild(id)}
@@ -120,7 +120,7 @@ function RewardShop() {
     <div className="flex flex-col gap-4">
       {/* Child selector */}
       <div className="flex rounded-xl overflow-hidden border border-gray-200 bg-white">
-        {[['jasper','🦸 Jasper'],['terry','🌟 Terry']].map(([id,label]) => (
+        {[['jasper','👦 Jasper'],['terry','🧒 Terry']].map(([id,label]) => (
           <button
             key={id}
             onClick={() => setChild(id)}
@@ -251,7 +251,7 @@ export default function ParentDashboard() {
   return (
     <div className="flex flex-col flex-1 pb-8">
       {/* Header */}
-      <div className="bg-gray-700 px-4 pt-6 pb-4 rounded-b-3xl shadow-md flex items-center justify-between">
+      <div className="bg-slate-400 px-4 pt-6 pb-4 rounded-b-3xl shadow-md flex items-center justify-between">
         <div>
           <div className="text-white font-black text-xl">🔐 家長專區</div>
           <div className="text-gray-400 text-xs">Hero's Quest 管理後台</div>

@@ -13,7 +13,8 @@
       "Bash(find /c/Users/qqyy3/GamiHomework -name *.test.* -o -name *.spec.* -o -name vitest.config* -o -name jest.config*)",
       "Bash(npm test:*)",
       "Bash(gh run:*)",
-      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs:/c/Users/qqyy3/AppData/Local/Programs/GitHub CLI\")"
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs:/c/Users/qqyy3/AppData/Local/Programs/GitHub CLI\")",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
