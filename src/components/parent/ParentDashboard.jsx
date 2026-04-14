@@ -162,19 +162,43 @@ function RewardShop() {
 
 // ── AI Lab ─────────────────────────────────────────────────────────────────
 
+// 壓縮圖片：最大 1024px，JPEG 0.75 品質，避免大圖 POST 失敗
+function compressImage(dataUrl, maxPx = 1024, quality = 0.75) {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+      const w = Math.round(img.width  * scale)
+      const h = Math.round(img.height * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width = w; canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.src = dataUrl
+  })
+}
+
 function AILab() {
   const { parseContactBook } = useApp()
   const fileRef = useRef(null)
   const [preview, setPreview] = useState(null)
   const [result,  setResult]  = useState(null)
   const [loading, setLoading] = useState(false)
+  const [fileSize, setFileSize] = useState(null)
 
-  function onFile(e) {
+  async function onFile(e) {
     const file = e.target.files[0]
     if (!file) return
     setResult(null)
     const reader = new FileReader()
-    reader.onload = ev => setPreview(ev.target.result)
+    reader.onload = async ev => {
+      const compressed = await compressImage(ev.target.result)
+      setPreview(compressed)
+      // 顯示壓縮後大小（KB）
+      const kb = Math.round((compressed.length * 0.75) / 1024)
+      setFileSize(kb)
+    }
     reader.readAsDataURL(file)
   }
 
@@ -205,7 +229,10 @@ function AILab() {
           text-gray-400 cursor-pointer hover:border-amber-400 transition-colors bg-white"
       >
         {preview
-          ? <img src={preview} alt="preview" className="max-h-48 rounded-xl object-contain" />
+          ? <>
+              <img src={preview} alt="preview" className="max-h-48 rounded-xl object-contain" />
+              {fileSize && <span className="text-xs text-gray-400">壓縮後約 {fileSize} KB</span>}
+            </>
           : <><Upload size={32} className="text-amber-300" /><span>點擊上傳照片</span></>}
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
       </div>
