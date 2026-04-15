@@ -37,13 +37,20 @@ async function gasGet(params) {
 }
 
 async function gasPost(body) {
+  // 使用 text/plain 避免 CORS preflight（GAS 無法處理 OPTIONS 請求）
+  // GAS 端仍可用 JSON.parse(e.postData.contents) 正常讀取
   const r = await fetch(GAS_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body),
+    redirect: 'follow',
   })
-  const data = await r.json()
-  return data ?? {}
+  try {
+    const data = await r.json()
+    return data ?? {}
+  } catch (_) {
+    return {}
+  }
 }
 
 // ── Provider ──────────────────────────────────────────────────────────────
@@ -182,10 +189,27 @@ export function AppProvider({ children }) {
   // ── Parent: manual star ────────────────────────────────────────────────────
 
   const addManualStar = useCallback(async (child, amount, reason) => {
+    // 先 optimistic update
     setBalance(prev => ({ ...prev, [child]: Math.max(0, prev[child] + amount) }))
-    if (!DEV) await gasPost({ action: 'addManualStar', child, amount, reason })
+    if (!DEV) {
+      try {
+        const res = await gasPost({ action: 'addManualStar', child, amount, reason })
+        if (res?.error) {
+          showToast('寫入失敗：' + res.error, 'error')
+          // rollback
+          setBalance(prev => ({ ...prev, [child]: Math.max(0, prev[child] - amount) }))
+          return
+        }
+        // 確認寫入後重抓 GAS 餘額，確保同步
+        await loadBalance(child)
+      } catch (e) {
+        showToast('網路錯誤，請重試', 'error')
+        setBalance(prev => ({ ...prev, [child]: Math.max(0, prev[child] - amount) }))
+        return
+      }
+    }
     showToast(`${amount > 0 ? '+' : ''}${amount}⭐ 已記錄`, 'success')
-  }, [showToast])
+  }, [showToast, loadBalance])
 
   // ── Parent: redeem reward ─────────────────────────────────────────────────
 
@@ -195,10 +219,24 @@ export function AppProvider({ children }) {
       return false
     }
     setBalance(prev => ({ ...prev, [child]: prev[child] - cost }))
-    if (!DEV) await gasPost({ action: 'redeemReward', child, rewardName, cost })
+    if (!DEV) {
+      try {
+        const res = await gasPost({ action: 'redeemReward', child, rewardName, cost })
+        if (res?.error) {
+          showToast('兌換失敗：' + res.error, 'error')
+          setBalance(prev => ({ ...prev, [child]: prev[child] + cost }))
+          return false
+        }
+        await loadBalance(child)
+      } catch (e) {
+        showToast('網路錯誤，請重試', 'error')
+        setBalance(prev => ({ ...prev, [child]: prev[child] + cost }))
+        return false
+      }
+    }
     showToast(`🎁 兌換成功：${rewardName}`, 'success')
     return true
-  }, [balance, showToast])
+  }, [balance, showToast, loadBalance])
 
   // ── Parent: AI contact book parse ─────────────────────────────────────────
 
@@ -208,12 +246,17 @@ export function AppProvider({ children }) {
     return res
   }, [])
 
-  // ── Load on child/date change ─────────────────────────────────────────────
+  // ── Load on role / child / date change ───────────────────────────────────
 
   useEffect(() => {
     if (role === 'child') {
       loadTasks(currentChild, selectedDate)
       loadBalance(currentChild)
+    }
+    if (role === 'parent') {
+      // 進入家長模式時也重拉兩個孩子的餘額，確保顯示最新數字
+      loadBalance('jasper')
+      loadBalance('terry')
     }
   }, [role, currentChild, selectedDate, loadTasks, loadBalance])
 
