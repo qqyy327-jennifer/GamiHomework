@@ -54,6 +54,7 @@ function doPost(e) {
     else if (d.action === 'addCustomTask')  result = addCustomTask(d.child, d.date, d.taskName);
     else if (d.action === 'addManualStar')  result = addManualStar(d.child, d.amount, d.reason);
     else if (d.action === 'redeemReward')   result = redeemReward(d.child, d.rewardName, d.cost);
+    else if (d.action === 'removeTask')     result = removeTask(d.child, d.date, d.taskName);
     else if (d.action === 'parseContactBook') result = parseContactBook(d.imageBase64);
     else result = { error: 'Unknown action: ' + d.action };
     return jsonOut(result);
@@ -147,8 +148,21 @@ function uncompleteTask(child, date, taskName) {
 function addCustomTask(child, date, taskName) {
   var ss = getSpreadsheet();
   var sheet = ss.getSheetByName('Daily_Tasks');
-  sheet.appendRow([date, child, taskName, 'custom', 2, 'Pending', '']);
-  return { success: true, task: { taskName: taskName, taskType: 'custom', value: 2, status: 'Pending', extra: '' } };
+  sheet.appendRow([date, child, taskName, 'custom', 1, 'Pending', '']);
+  return { success: true, task: { taskName: taskName, taskType: 'custom', value: 1, status: 'Pending', extra: '' } };
+}
+
+function removeTask(child, date, taskName) {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('Daily_Tasks');
+  var data = sheet.getDataRange().getValues();
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][0]) === date && data[i][1] === child && data[i][2] === taskName && data[i][5] !== 'Completed') {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: 'Task not found or already completed' };
 }
 
 // ── Star ledger functions ──────────────────────────────────────────────────

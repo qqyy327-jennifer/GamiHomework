@@ -167,6 +167,18 @@ export function AppProvider({ children }) {
     return newTask
   }, [])
 
+  // ── Remove task (尚未完成才可移除) ────────────────────────────────────────
+
+  const removeTask = useCallback(async (child, date, taskName) => {
+    setTasks(prev => ({
+      ...prev,
+      [child]: prev[child].filter(t => t.taskName !== taskName),
+    }))
+    if (!DEV) {
+      await gasPost({ action: 'removeTask', child, date, taskName })
+    }
+  }, [])
+
   // ── Parent: manual star ────────────────────────────────────────────────────
 
   const addManualStar = useCallback(async (child, amount, reason) => {
@@ -217,7 +229,7 @@ export function AppProvider({ children }) {
     selectedDate, setSelectedDate,
     tasks, balance, streak, loading,
     toast, showToast,
-    completeTask, uncompleteTask, addCustomTask,
+    completeTask, uncompleteTask, addCustomTask, removeTask,
     addManualStar, redeemReward, parseContactBook,
     loadTasks, loadBalance,
     logout,

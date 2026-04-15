@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import confetti from 'canvas-confetti'
 import { Mic, MicOff, LogOut, Check, Plus } from 'lucide-react'
 import { useApp } from '../../contexts/AppContext.jsx'
@@ -78,8 +78,8 @@ const taskEmoji = t => CHORE_EMOJI[t.taskName] || SUBJECT_EMOJI[t.taskName] || '
 // ── Quick-pick presets ─────────────────────────────────────────────────────
 
 const PRESETS = {
-  jasper: ['國語', '英文', '數學'],
-  terry:  ['ㄅㄆㄇ', '數學', '英文'],
+  jasper: ['國語', '英文', '數學', '鋼琴', '跳繩', '足球', '游泳'],
+  terry:  ['ㄅㄆㄇ', '數學', '英文', '鋼琴', '跳繩', '足球', '游泳'],
 }
 
 // ── Task row (list style) ──────────────────────────────────────────────────
@@ -141,8 +141,8 @@ export default function ChildDashboard() {
     currentChild, setCurrentChild,
     selectedDate, setSelectedDate,
     tasks, balance, streak,
-    completeTask, uncompleteTask, addCustomTask,
-    showToast, logout,
+    completeTask, uncompleteTask, addCustomTask, removeTask,
+    loadBalance, showToast, logout,
   } = useApp()
 
   const [inputText, setInputText]   = useState('')
@@ -152,6 +152,11 @@ export default function ChildDashboard() {
 
   const childTasks = tasks[currentChild] || []
   const today      = todayStr()
+
+  // 每次進入子頁面或切換孩子時，強制重拉 balance（確保家長補給的星星同步顯示）
+  useEffect(() => {
+    loadBalance(currentChild)
+  }, [currentChild, loadBalance])
 
   // ── Voice input ────────────────────────────────────────────────────────
 
@@ -173,7 +178,7 @@ export default function ChildDashboard() {
   }
   function stopVoice() { recRef.current?.stop() }
 
-  // ── Add task ───────────────────────────────────────────────────────────
+  // ── Add / remove task ─────────────────────────────────────────────────
 
   async function handleAdd(name) {
     const trimmed = (name || inputText).trim()
@@ -185,6 +190,17 @@ export default function ChildDashboard() {
     await addCustomTask(currentChild, selectedDate, trimmed)
     showToast(`已新增：${trimmed}`)
     setInputText('')
+  }
+
+  async function handleRemovePreset(name) {
+    const task = childTasks.find(t => t.taskName === name)
+    if (!task) return
+    if (task.status === 'Completed') {
+      showToast('已完成的任務不能取消', 'error')
+      return
+    }
+    await removeTask(currentChild, selectedDate, name)
+    showToast(`已移除：${name}`)
   }
 
   // ── Complete / uncomplete ──────────────────────────────────────────────
@@ -263,17 +279,22 @@ export default function ChildDashboard() {
           {/* Quick-pick chips */}
           <div className="flex gap-2 flex-wrap">
             {PRESETS[currentChild].map(name => {
-              const already = childTasks.some(t => t.taskName === name)
+              const task   = childTasks.find(t => t.taskName === name)
+              const added  = !!task
+              const done   = task?.status === 'Completed'
               return (
                 <button
                   key={name}
-                  onClick={() => !already && handleAdd(name)}
-                  className={`px-4 py-2 rounded-2xl font-bold text-sm transition-all
-                    ${already
-                      ? 'bg-amber-400 text-white shadow-inner cursor-default'
-                      : 'bg-amber-50 text-amber-700 border-2 border-amber-300 active:scale-95'}`}
+                  onClick={() => added ? handleRemovePreset(name) : handleAdd(name)}
+                  className={`px-4 py-2 rounded-2xl font-bold text-sm transition-all active:scale-95
+                    ${done
+                      ? 'bg-green-400 text-white cursor-default'
+                      : added
+                        ? 'bg-amber-400 text-white shadow-inner'
+                        : 'bg-amber-50 text-amber-700 border-2 border-amber-300'}`}
+                  title={done ? '已完成' : added ? '點擊取消' : '點擊新增'}
                 >
-                  {already ? `✓ ${name}` : name}
+                  {done ? `✓ ${name}` : added ? `× ${name}` : name}
                 </button>
               )
             })}
