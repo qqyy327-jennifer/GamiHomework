@@ -38,20 +38,22 @@ describe('任務載入（DEV 模式）', () => {
     expect(result.current.tasks.jasper.length).toBeGreaterThan(0)
   })
 
-  it('jasper 任務包含三科學科', async () => {
+  it('jasper defaultTasks 只包含家事，不包含學科（學科由 chips 新增）', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
     const names = result.current.tasks.jasper.map(t => t.taskName)
-    expect(names).toContain('國語')
-    expect(names).toContain('數學')
-    expect(names).toContain('英文')
+    expect(names).not.toContain('國語')
+    expect(names).not.toContain('數學')
+    expect(names).not.toContain('英文')
+    expect(names).not.toContain('跳繩')
   })
 
-  it('jasper 任務包含跳繩', async () => {
+  it('jasper 任務包含家事項目', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
     const names = result.current.tasks.jasper.map(t => t.taskName)
-    expect(names).toContain('跳繩')
+    expect(names).toContain('整理書包')
+    expect(names).toContain('擦桌子')
   })
 
   it('terry 任務不包含學科', async () => {
@@ -91,56 +93,56 @@ describe('任務載入（DEV 模式）', () => {
 // ── completeTask ────────────────────────────────────────────────────────────
 
 describe('completeTask', () => {
-  it('完成學科任務後餘額增加 1', async () => {
+  it('完成家事任務後餘額增加 1', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
     await act(async () => {
-      await result.current.completeTask('jasper', '2026-04-13', '國語')
+      await result.current.completeTask('jasper', '2026-04-13', '整理書包')
     })
     expect(result.current.balance.jasper).toBe(1)
   })
 
-  it('完成跳繩任務後餘額增加 2', async () => {
+  it('每個任務固定 +1 顆星', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
     await act(async () => {
-      await result.current.completeTask('jasper', '2026-04-13', '跳繩', '50')
+      await result.current.completeTask('jasper', '2026-04-13', '擦桌子')
     })
-    expect(result.current.balance.jasper).toBe(2)
+    expect(result.current.balance.jasper).toBe(1)
   })
 
   it('任務狀態更新為 Completed', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
     await act(async () => {
-      await result.current.completeTask('jasper', '2026-04-13', '數學')
+      await result.current.completeTask('jasper', '2026-04-13', '整理書包')
     })
-    const task = result.current.tasks.jasper.find(t => t.taskName === '數學')
+    const task = result.current.tasks.jasper.find(t => t.taskName === '整理書包')
     expect(task.status).toBe('Completed')
   })
 
   it('重複完成同一任務不會重複加星', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
-    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '國語') })
+    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '整理書包') })
     const bal = result.current.balance.jasper
-    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '國語') })
+    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '整理書包') })
     expect(result.current.balance.jasper).toBe(bal)
   })
 
   it('完成多個任務累加星星', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
-    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '國語') })
-    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '數學') })
-    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '英文') })
+    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '整理書包') })
+    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '擦桌子') })
+    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '摺衣服') })
     expect(result.current.balance.jasper).toBe(3)
   })
 
   it('jasper 完成任務不影響 terry 餘額', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
-    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '國語') })
+    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '整理書包') })
     expect(result.current.balance.terry).toBe(0)
   })
 })
@@ -151,18 +153,18 @@ describe('uncompleteTask', () => {
   it('取消完成後餘額減少', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
-    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '國語') })
+    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '整理書包') })
     const balAfter = result.current.balance.jasper
-    await act(async () => { await result.current.uncompleteTask('jasper', '2026-04-13', '國語') })
+    await act(async () => { await result.current.uncompleteTask('jasper', '2026-04-13', '整理書包') })
     expect(result.current.balance.jasper).toBe(balAfter - 1)
   })
 
   it('取消完成後狀態回到 Pending', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
-    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '國語') })
-    await act(async () => { await result.current.uncompleteTask('jasper', '2026-04-13', '國語') })
-    const task = result.current.tasks.jasper.find(t => t.taskName === '國語')
+    await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '整理書包') })
+    await act(async () => { await result.current.uncompleteTask('jasper', '2026-04-13', '整理書包') })
+    const task = result.current.tasks.jasper.find(t => t.taskName === '整理書包')
     expect(task.status).toBe('Pending')
   })
 
@@ -170,7 +172,7 @@ describe('uncompleteTask', () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
     const balBefore = result.current.balance.jasper
-    await act(async () => { await result.current.uncompleteTask('jasper', '2026-04-13', '國語') })
+    await act(async () => { await result.current.uncompleteTask('jasper', '2026-04-13', '整理書包') })
     expect(result.current.balance.jasper).toBe(balBefore)
   })
 })
@@ -255,7 +257,7 @@ describe('redeemReward（兌換獎勵）', () => {
 
 // ── addCustomTask ───────────────────────────────────────────────────────────
 
-describe('addCustomTask（語音自訂家事）', () => {
+describe('addCustomTask（自訂任務）', () => {
   it('新增自訂任務到清單', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
@@ -264,23 +266,37 @@ describe('addCustomTask（語音自訂家事）', () => {
     expect(result.current.tasks.jasper.length).toBe(countBefore + 1)
   })
 
-  it('自訂任務屬性正確', async () => {
+  it('自訂任務屬性正確（value=1）', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
     await act(async () => { await result.current.addCustomTask('jasper', '2026-04-13', '幫忙洗碗') })
     const task = result.current.tasks.jasper.find(t => t.taskName === '幫忙洗碗')
     expect(task).toBeDefined()
     expect(task.taskType).toBe('custom')
-    expect(task.value).toBe(2)
+    expect(task.value).toBe(1)
     expect(task.status).toBe('Pending')
   })
 
-  it('自訂任務完成後得 2 顆星', async () => {
+  it('自訂任務完成後得 1 顆星', async () => {
     const { result } = renderHook(() => useApp(), { wrapper })
     await act(async () => { result.current.setRole('child') })
     await act(async () => { await result.current.addCustomTask('jasper', '2026-04-13', '幫忙洗碗') })
     await act(async () => { await result.current.completeTask('jasper', '2026-04-13', '幫忙洗碗') })
-    expect(result.current.balance.jasper).toBe(2)
+    expect(result.current.balance.jasper).toBe(1)
+  })
+})
+
+// ── removeTask ──────────────────────────────────────────────────────────────
+
+describe('removeTask（移除任務）', () => {
+  it('移除後任務從清單消失', async () => {
+    const { result } = renderHook(() => useApp(), { wrapper })
+    await act(async () => { result.current.setRole('child') })
+    await act(async () => { await result.current.addCustomTask('jasper', '2026-04-13', '測試任務') })
+    const countBefore = result.current.tasks.jasper.length
+    await act(async () => { await result.current.removeTask('jasper', '2026-04-13', '測試任務') })
+    expect(result.current.tasks.jasper.length).toBe(countBefore - 1)
+    expect(result.current.tasks.jasper.find(t => t.taskName === '測試任務')).toBeUndefined()
   })
 })
 
