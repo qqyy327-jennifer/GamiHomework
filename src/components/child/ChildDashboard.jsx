@@ -146,6 +146,7 @@ export default function ChildDashboard() {
   } = useApp()
 
   const [inputText, setInputText]   = useState('')
+  const [interim,   setInterim]     = useState('')   // 語音辨識即時預覽
   const [listening, setListening]   = useState(false)
   const recRef  = useRef(null)
   const inputRef = useRef(null)
@@ -162,23 +163,77 @@ export default function ChildDashboard() {
 
   function startVoice() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { alert('此裝置不支援語音辨識，請手動輸入'); return }
+    if (!SR) {
+      showToast('此裝置不支援語音辨識，請手動輸入', 'error')
+      return
+    }
+
+    // 先確認麥克風權限
+    navigator.mediaDevices?.getUserMedia({ audio: true })
+      .then(() => launchRecognition(SR))
+      .catch(() => showToast('請允許使用麥克風後再試', 'error'))
+  }
+
+  function launchRecognition(SR) {
     const rec = new SR()
     rec.lang = 'zh-TW'
-    rec.interimResults = false
-    rec.onstart  = () => setListening(true)
-    rec.onend    = () => setListening(false)
-    rec.onerror  = () => setListening(false)
-    rec.onresult = e => {
-      const text = e.results[0][0].transcript.trim()
-      if (text) setInputText(text)
+    rec.interimResults = true   // 邊說邊顯示
+    rec.maxAlternatives = 1
+    rec.continuous = false
+
+    rec.onstart = () => { setListening(true); setInterim('') }
+    rec.onend   = () => { setListening(false); setInterim('') }
+
+    rec.onerror = e => {
+      setListening(false); setInterim('')
+      const msgs = {
+        'not-allowed':       '請允許使用麥克風後再試',
+        'no-speech':         '沒有偵測到聲音，請再說一次',
+        'audio-capture':     '找不到麥克風裝置',
+        'network':           '網路錯誤，無法使用語音辨識',
+        'service-not-allowed':'此裝置不支援語音辨識',
+      }
+      showToast(msgs[e.error] || `語音辨識失敗（${e.error}）`, 'error')
     }
+
+    rec.onresult = e => {
+      let final = '', inter = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript
+        else inter += e.results[i][0].transcript
+      }
+      if (inter) setInterim(inter)
+      if (final.trim()) {
+        setInterim('')
+        // 說完直接自動新增任務，不需再按按鈕
+        const text = final.trim()
+        setInputText(text)
+        // 用 timeout 讓 setInputText 先 flush，再 handleAdd
+        setTimeout(() => handleAddByText(text), 50)
+      }
+    }
+
     recRef.current = rec
-    rec.start()
+    try { rec.start() } catch (e) { showToast('語音啟動失敗，請重試', 'error') }
   }
-  function stopVoice() { recRef.current?.stop() }
+
+  function stopVoice() { recRef.current?.stop?.() }
 
   // ── Add / remove task ─────────────────────────────────────────────────
+
+  // 語音辨識完成後直接呼叫（傳入辨識到的文字）
+  async function handleAddByText(text) {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    if (childTasks.some(t => t.taskName === trimmed)) {
+      showToast(`「${trimmed}」已在清單中`, 'error')
+      setInputText('')
+      return
+    }
+    await addCustomTask(currentChild, selectedDate, trimmed)
+    showToast(`🎙️ 已新增：${trimmed}`)
+    setInputText('')
+  }
 
   async function handleAdd(name) {
     const trimmed = (name || inputText).trim()
@@ -300,32 +355,45 @@ export default function ChildDashboard() {
             })}
           </div>
 
-          {/* Text + voice input */}
+          {/* 語音按鈕 */}
+          <button
+            onClick={listening ? stopVoice : startVoice}
+            className={`btn-child gap-3 font-bold transition-all
+              ${listening
+                ? 'bg-red-400 text-white animate-pulse'
+                : 'bg-pink-100 text-pink-600 border-2 border-pink-300'}`}
+          >
+            {listening
+              ? <><MicOff size={20} /> 點擊停止</>
+              : <><Mic size={20} /> 🎙️ 說出任務名稱（自動新增）</>}
+          </button>
+
+          {/* 即時語音預覽 */}
+          {(listening || interim) && (
+            <div className="bg-pink-50 border-2 border-pink-200 rounded-2xl px-4 py-2 text-sm text-pink-700 font-bold min-h-[2.5rem]">
+              {interim ? `「${interim}」` : '🎧 聆聽中，請說任務名稱…'}
+            </div>
+          )}
+
+          {/* 文字輸入 */}
           <div className="flex gap-2">
             <input
               ref={inputRef}
               value={inputText}
               onChange={e => setInputText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              placeholder="輸入其他任務…"
+              placeholder="或直接打字輸入任務…"
               className="flex-1 border-2 border-amber-300 rounded-2xl px-4 py-2 text-sm font-bold
                 focus:outline-none focus:border-amber-500"
             />
             <button
-              onClick={listening ? stopVoice : startVoice}
-              className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0
-                ${listening ? 'bg-red-400 animate-pulse' : 'bg-amber-100 text-amber-600'}`}
+              onClick={() => handleAdd()}
+              disabled={!inputText.trim()}
+              className="btn-child bg-amber-400 text-white disabled:opacity-40 gap-1 px-4"
             >
-              {listening ? <MicOff size={18} className="text-white" /> : <Mic size={18} />}
+              <Plus size={18} /> 新增
             </button>
           </div>
-          <button
-            onClick={() => handleAdd()}
-            disabled={!inputText.trim()}
-            className="btn-child bg-amber-400 text-white disabled:opacity-40 gap-2"
-          >
-            <Plus size={18} /> 新增任務
-          </button>
         </div>
 
         {/* ── 今日任務清單 ── */}
