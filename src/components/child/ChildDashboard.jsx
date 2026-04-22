@@ -167,11 +167,8 @@ export default function ChildDashboard() {
       showToast('此裝置不支援語音辨識，請手動輸入', 'error')
       return
     }
-
-    // 先確認麥克風權限
-    navigator.mediaDevices?.getUserMedia({ audio: true })
-      .then(() => launchRecognition(SR))
-      .catch(() => showToast('請允許使用麥克風後再試', 'error'))
+    // 直接啟動，瀏覽器會自行彈出麥克風授權視窗
+    launchRecognition(SR)
   }
 
   function launchRecognition(SR) {
