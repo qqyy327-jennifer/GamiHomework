@@ -29,13 +29,20 @@ function defaultTasks(child) {
 
 // ── GET handler ────────────────────────────────────────────────────────────
 
+// doGet 處理所有操作（含寫入），避免 POST redirect 導致 body 遺失
 function doGet(e) {
   try {
     var p = e.parameter;
     var result;
-    if (p.action === 'getTasks')       result = getTasks(p.child, p.date);
-    else if (p.action === 'getBalance') result = getBalance(p.child);
-    else if (p.action === 'getStreak')  result = getStreak(p.child);
+    if      (p.action === 'getTasks')       result = getTasks(p.child, p.date);
+    else if (p.action === 'getBalance')     result = getBalance(p.child);
+    else if (p.action === 'getStreak')      result = getStreak(p.child);
+    else if (p.action === 'completeTask')   result = completeTask(p.child, p.date, p.taskName, p.taskType, Number(p.value), p.extra || '');
+    else if (p.action === 'uncompleteTask') result = uncompleteTask(p.child, p.date, p.taskName);
+    else if (p.action === 'addCustomTask')  result = addCustomTask(p.child, p.date, p.taskName);
+    else if (p.action === 'removeTask')     result = removeTask(p.child, p.date, p.taskName);
+    else if (p.action === 'addManualStar')  result = addManualStar(p.child, Number(p.amount), p.reason);
+    else if (p.action === 'redeemReward')   result = redeemReward(p.child, p.rewardName, Number(p.cost));
     else result = { error: 'Unknown action: ' + p.action };
     return jsonOut(result);
   } catch (err) {

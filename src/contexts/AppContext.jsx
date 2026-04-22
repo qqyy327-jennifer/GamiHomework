@@ -28,22 +28,26 @@ function todayStr() {
 }
 
 // ── API helpers ────────────────────────────────────────────────────────────
+// GAS Web App POST 請求在 302 redirect 時 body 會被瀏覽器清空，
+// 因此所有操作（包含寫入）都改用 GET + URL params，只有大型 payload（圖片 OCR）才用 POST。
 
 async function gasGet(params) {
   const qs = new URLSearchParams(params)
   const r = await fetch(`${GAS_URL}?${qs}`)
-  const data = await r.json()
-  return data ?? {}
+  try {
+    const data = await r.json()
+    return data ?? {}
+  } catch (_) {
+    return {}
+  }
 }
 
+// 只有 parseContactBook（base64 圖片）保留 POST
 async function gasPost(body) {
-  // 使用 text/plain 避免 CORS preflight（GAS 無法處理 OPTIONS 請求）
-  // GAS 端仍可用 JSON.parse(e.postData.contents) 正常讀取
   const r = await fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body),
-    redirect: 'follow',
   })
   try {
     const data = await r.json()
@@ -125,11 +129,12 @@ export function AppProvider({ children }) {
     if (DEV) return { stars: task.value, streakBonus: 0 }
 
     try {
-      const res = await gasPost({
+      const res = await gasGet({
         action: 'completeTask', child, date,
         taskName: task.taskName, taskType: task.taskType,
         value: task.value, extra: extra || '',
       })
+      if (res?.error) showToast('寫入失敗：' + res.error, 'error')
       if (res?.streakBonus > 0) {
         setBalance(prev => ({ ...prev, [child]: prev[child] + res.streakBonus }))
         setStreak(prev => ({ ...prev, [child]: 5 }))
@@ -157,7 +162,7 @@ export function AppProvider({ children }) {
     setBalance(prev => ({ ...prev, [child]: Math.max(0, prev[child] - task.value) }))
 
     if (!DEV) {
-      await gasPost({ action: 'uncompleteTask', child, date, taskName })
+      await gasGet({ action: 'uncompleteTask', child, date, taskName })
       await loadBalance(child)
     }
   }, [tasks, loadBalance])
@@ -169,7 +174,7 @@ export function AppProvider({ children }) {
     setTasks(prev => ({ ...prev, [child]: [...prev[child], newTask] }))
 
     if (!DEV) {
-      await gasPost({ action: 'addCustomTask', child, date, taskName })
+      await gasGet({ action: 'addCustomTask', child, date, taskName })
     }
     return newTask
   }, [])
@@ -182,7 +187,7 @@ export function AppProvider({ children }) {
       [child]: prev[child].filter(t => t.taskName !== taskName),
     }))
     if (!DEV) {
-      await gasPost({ action: 'removeTask', child, date, taskName })
+      await gasGet({ action: 'removeTask', child, date, taskName })
     }
   }, [])
 
@@ -193,7 +198,7 @@ export function AppProvider({ children }) {
     setBalance(prev => ({ ...prev, [child]: Math.max(0, prev[child] + amount) }))
     if (!DEV) {
       try {
-        const res = await gasPost({ action: 'addManualStar', child, amount, reason })
+        const res = await gasGet({ action: 'addManualStar', child, amount, reason })
         if (res?.error) {
           showToast('寫入失敗：' + res.error, 'error')
           // rollback
@@ -221,7 +226,7 @@ export function AppProvider({ children }) {
     setBalance(prev => ({ ...prev, [child]: prev[child] - cost }))
     if (!DEV) {
       try {
-        const res = await gasPost({ action: 'redeemReward', child, rewardName, cost })
+        const res = await gasGet({ action: 'redeemReward', child, rewardName, cost })
         if (res?.error) {
           showToast('兌換失敗：' + res.error, 'error')
           setBalance(prev => ({ ...prev, [child]: prev[child] + cost }))
